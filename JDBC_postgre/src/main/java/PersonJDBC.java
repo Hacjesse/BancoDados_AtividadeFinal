@@ -1,0 +1,106 @@
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+
+public class PersonJDBC implements PersonDAO{
+	
+	private Connection connection;
+	
+	public PersonJDBC(String url, String user, String password) throws ClassNotFoundException, SQLException {
+		//load driver communication of postgresql.
+		Class.forName("org.postgresql.Driver");
+		//open the connection
+		this.connection = DriverManager.getConnection(url, user, password);
+	}
+
+	public void addPerson(Person person) throws SQLException {
+		//query of postgresql
+		String sql = "insert into person(name, sobrenome, birthday)"
+				+ "values (?,?,?)";
+		
+		PreparedStatement ps = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+		
+		
+		// 1 = first '?' 
+		ps.setString(1, person.getName());
+		// 2 - second '?'
+		ps.setString(2, person.getSobrenome());
+		// 3 = third '?'
+		ps.setString(3, person.getBirthday());
+		
+		//use execute update when the database return nothing
+		ps.executeUpdate();
+		
+		ResultSet generatedKeys =  ps.getGeneratedKeys();
+		if(generatedKeys.next()) {
+			person.setId(generatedKeys.getInt(1));
+		}
+		
+		
+	}
+        private static final String UPDATE_USERS_SQL = "update person set name = ?, sobrenome = ?, birthday = ?  where id_person= ?";
+        public void upPerson(Person person) throws SQLException {
+            
+            
+            PreparedStatement ps = this.connection.prepareStatement(UPDATE_USERS_SQL);
+          
+            ps.setString(1, person.getName());
+            ps.setString(2, person.getSobrenome());
+            ps.setString(3, person.getBirthday());
+            ps.setInt(4, person.getId());
+
+            
+            
+            ps.executeUpdate();
+            
+        }
+
+	public void removePerson(Person person) throws SQLException {
+		String sql = "delete from person where id_person = ?";
+		PreparedStatement ps = this.connection.prepareStatement(sql);
+		ps.setInt(1, person.getId());
+		ps.executeUpdate();
+		
+		
+	}
+
+	public Person getPerson(String name) throws SQLException {
+		//get all persons
+		ArrayList<Person> array = getAllPersons();
+		for (Person person : array) {
+			if(person.getName().equals(name)) {
+				return person;
+			}
+		}
+		return null;
+	}
+
+	public ArrayList<Person> getAllPersons() throws SQLException {
+		ArrayList<Person> array = new ArrayList<Person>();
+		
+		//get all persons
+		//query of postgresql
+		ResultSet result = this.connection.prepareStatement("select * from person").executeQuery();
+		while(result.next()) {
+			//new Person
+			Person person = new Person();
+			//get column of name
+			person.setName(result.getString("name"));
+			person.setId(result.getInt("id_person"));
+			person.setSobrenome(result.getString("sobrenome"));
+			person.setBirthday(result.getString("birthday"));
+			array.add(person);
+		}
+		result.close();
+		return array;
+		
+	}
+
+    public Person upPerson(String string) throws SQLException {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+}
